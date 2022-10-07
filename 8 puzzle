@@ -1,0 +1,202 @@
+import copy  
+  
+# importing the heap methods from the python  
+# library for the priority queue  
+from heapq import heappush, heappop  
+  
+# this particular var can be changed to transform  
+# the program from 8 puzzle(n=3) into 15  
+# puzzle(n=4) and so on ...  
+n = 3  
+  
+# bottom, left, top, right  
+rows = [ 1, 0, -1, 0 ]  
+cols = [ 0, -1, 0, 1 ]  
+  
+# creating a class for the priority queue  
+class priorityqueue:  
+      
+    # constructor for initializing a  
+    # priority queue  
+    def __init__(self):  
+        self.heap = []  
+  
+    # inserting a new key 'key'  
+    def push(self, key):  
+        heappush(self.heap, key)  
+  
+    # funct to remove the element that is minimum,  
+    # from the priority queue  
+    def pop(self):  
+        return heappop(self.heap)  
+  
+    # funct to check if the queue is empty or not  
+    def empty(self):  
+        if not self.heap:  
+            return true  
+        else:  
+            return false  
+  
+# structure of the node  
+class nodes:  
+      
+    def __init__(self, parent, mats, empty_tile_posi,  
+                costs, levels):  
+                      
+        # this will store the parent node to the  
+        # current node and helps in tracing the  
+        # path when the solution is visible  
+        self.parent = parent  
+  
+        # useful for storing the matrix  
+        self.mats = mats  
+  
+        # useful for storing the position where the  
+        # empty space tile is already existing in the matrix  
+        self.empty_tile_posi = empty_tile_posi  
+  
+        # store no. of misplaced tiles  
+        self.costs = costs  
+  
+        # store no. of moves so far  
+        self.levels = levels  
+  
+    # this func is used in order to form the  
+    # priority queue based on  
+    # the costs var of objects  
+    def __lt__(self, nxt):  
+        return self.costs < nxt.costs  
+  
+# method to calc. the no. of  
+# misplaced tiles, that is the no. of non-blank  
+# tiles not in their final posi  
+def calculatecosts(mats, final) -> int:  
+      
+    count = 0  
+    for i in range(n):  
+        for j in range(n):  
+            if ((mats[i][j]) and  
+                (mats[i][j] != final[i][j])):  
+                count += 1  
+                  
+    return count  
+  
+def newnodes(mats, empty_tile_posi, new_empty_tile_posi,  
+            levels, parent, final) -> nodes:  
+                  
+    # copying data from the parent matrixes to the present matrixes  
+    new_mats = copy.deepcopy(mats)  
+  
+    # moving the tile by 1 position  
+    x1 = empty_tile_posi[0]  
+    y1 = empty_tile_posi[1]  
+    x2 = new_empty_tile_posi[0]  
+    y2 = new_empty_tile_posi[1]  
+    new_mats[x1][y1], new_mats[x2][y2] = new_mats[x2][y2], new_mats[x1][y1]  
+  
+    # setting the no. of misplaced tiles  
+    costs = calculatecosts(new_mats, final)  
+  
+    new_nodes = nodes(parent, new_mats, new_empty_tile_posi,  
+                    costs, levels)  
+    return new_nodes  
+  
+# func to print the n by n matrix  
+def printmatsrix(mats):  
+      
+    for i in range(n):  
+        for j in range(n):  
+            print("%d " % (mats[i][j]), end = " ")  
+              
+        print()  
+  
+# func to know if (x, y) is a valid or invalid  
+# matrix coordinates  
+def issafe(x, y):  
+      
+    return x >= 0 and x < n and y >= 0 and y < n  
+  
+# printing the path from the root node to the final node  
+def printpath(root):  
+      
+    if root == none:  
+        return  
+      
+    printpath(root.parent)  
+    printmatsrix(root.mats)  
+    print()  
+  
+# method for solving n*n - 1 puzzle algo  
+# by utilizing the branch and bound technique. empty_tile_posi is  
+# the blank tile position initially.  
+def solve(initial, empty_tile_posi, final):  
+      
+    # creating a priority queue for storing the live  
+    # nodes of the search tree  
+    pq = priorityqueue()  
+  
+    # creating the root node  
+    costs = calculatecosts(initial, final)  
+    root = nodes(none, initial,  
+                empty_tile_posi, costs, 0)  
+  
+    # adding root to the list of live nodes  
+    pq.push(root)  
+  
+    # discovering a live node with min. costs,  
+    # and adding its children to the list of live  
+    # nodes and finally deleting it from  
+    # the list.  
+    while not pq.empty():  
+  
+        # finding a live node with min. estimatsed  
+        # costs and deleting it form the list of the  
+        # live nodes  
+        minimum = pq.pop()  
+  
+        # if the min. is ans node  
+        if minimum.costs == 0:  
+              
+            # printing the path from the root to  
+            # destination;  
+            printpath(minimum)  
+            return  
+  
+        # generating all feasible children  
+        for i in range(n):  
+            new_tile_posi = [  
+                minimum.empty_tile_posi[0] + rows[i],  
+                minimum.empty_tile_posi[1] + cols[i], ]  
+                  
+            if issafe(new_tile_posi[0], new_tile_posi[1]):  
+                  
+                # creating a child node  
+                child = newnodes(minimum.mats,  
+                                minimum.empty_tile_posi,  
+                                new_tile_posi,  
+                                minimum.levels + 1,  
+                                minimum, final,)  
+  
+                # adding the child to the list of live nodes  
+                pq.push(child)  
+  
+# main code  
+  
+# initial configuration  
+# value 0 is taken here as an empty space  
+initial = [ [ 1, 2, 3 ],  
+            [ 5, 6, 0 ],  
+            [ 7, 8, 4 ] ]  
+  
+# final configuration that can be solved  
+# value 0 is taken as an empty space  
+final = [ [ 1, 2, 3 ],  
+        [ 5, 8, 6 ],  
+        [ 0, 7, 4 ] ]  
+  
+# blank tile coordinates in the   
+# initial configuration  
+empty_tile_posi = [ 1, 2 ]  
+  
+# method call for solving the puzzle  
+solve(initial, empty_tile_posi, final) 
